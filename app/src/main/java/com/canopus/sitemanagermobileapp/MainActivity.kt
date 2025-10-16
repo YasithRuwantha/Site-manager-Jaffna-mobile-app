@@ -1,4 +1,4 @@
-package com.canopus.SiteManagerMobileApp
+package com.canopus.sitemanagermobileapp
 
 import android.app.Activity
 import android.os.Bundle
@@ -34,6 +34,11 @@ class MainActivity : Activity() {
         webView.settings.builtInZoomControls = true
         webView.settings.displayZoomControls = false
 
+        // Additional settings for better compatibility
+        webView.settings.loadWithOverviewMode = true
+        webView.settings.useWideViewPort = true
+        webView.settings.javaScriptCanOpenWindowsAutomatically = true
+
         // Add JavaScript interface for logout
         webView.addJavascriptInterface(WebAppInterface(), "Android")
 
@@ -42,7 +47,8 @@ class MainActivity : Activity() {
 
             override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
                 // Check if logout URL is being loaded
-                if (url?.contains("logout") == true) {
+                if (url?.contains("logout", ignoreCase = true) == true || 
+                    url?.contains("login", ignoreCase = true) == true) {
                     clearWebViewData()
                 }
                 // Load URLs within the WebView instead of external browser
@@ -88,7 +94,7 @@ class MainActivity : Activity() {
 
     private fun injectLogoutScript() {
         val javascript = """
-            javascript:(function() {
+            (function() {
                 // Override any existing logout functions
                 window.originalLogout = window.logout;
                 
@@ -101,22 +107,22 @@ class MainActivity : Activity() {
                     }
                 };
                 
-                
-                 Find and update logout buttons
+                // Find and update logout buttons
                 setTimeout(function() {
                     var logoutElements = document.querySelectorAll('a[href*="logout"], button[onclick*="logout"], .logout, #logout, [class*="logout"], [id*="logout"]');
                     
                     for (var i = 0; i < logoutElements.length; i++) {
                         var element = logoutElements[i];
-                        element.onclick = function(e) {
+                        element.addEventListener('click', function(e) {
                             e.preventDefault();
+                            e.stopPropagation();
                             if (typeof Android !== 'undefined' && Android.logout) {
                                 Android.logout();
                             } else {
                                 window.location.href = 'index.php/login';
                             }
                             return false;
-                        };
+                        }, true);
                     }
                 }, 1000);
             })();
